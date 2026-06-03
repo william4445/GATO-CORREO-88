@@ -225,7 +225,7 @@
             filter: blur(0px);
         }
 
-        /* --- BLOQUE DEL CORAZÓN Y SU TEXTO (ULTIMO EN SALIR) --- */
+        /* --- BLOQUE DEL CORAZÓN Y SU TEXTO --- */
         .bloque-interactivo-final {
             margin-top: 30px;
             display: flex;
@@ -236,7 +236,7 @@
             transform: translateY(20px);
             filter: blur(5px);
             transition: opacity 1.5s cubic-bezier(0.16, 1, 0.3, 1), transform 1.5s cubic-bezier(0.16, 1, 0.3, 1), filter 1s ease;
-            pointer-events: none; /* Desactivado hasta que sea visible */
+            pointer-events: none;
         }
 
         .bloque-interactivo-final.visible {
@@ -269,7 +269,6 @@
             overflow: visible;
         }
 
-        /* Trazado del corazón vacío */
         .svg-corazon path {
             fill: transparent;
             stroke: #ffffff;
@@ -278,14 +277,12 @@
             filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.3));
         }
 
-        /* Estado llenado */
         .bloque-interactivo-final.llenado .svg-corazon path {
             fill: #ff3355;
             stroke: #ff3355;
             filter: drop-shadow(0 0 25px rgba(255, 51, 85, 0.8));
         }
 
-        /* Latido sutil automático mientras espera clic */
         .bloque-interactivo-final.visible:not(.llenado) .contenedor-corazon-interactivo {
             animation: latidoSutil 1.5s infinite ease-in-out;
         }
@@ -359,7 +356,6 @@
 
     <!-- Mensajes e Imágenes -->
     <div class="contenido-interactivo">
-        <!-- Imagen Sorpresa de la Rosa Central -->
         <img src="ro1.png" alt="Rosa" class="rosa-central" id="rosaCentral">
 
         <h1 class="texto-carta" id="textoMensaje"></h1>
@@ -371,7 +367,7 @@
 
         <h2 class="texto-final" id="textoFinal">TE QUIERO MUCHO</h2>
 
-        <!-- Bloque Interactivo Final (Corazón + Texto indicativo) -->
+        <!-- Bloque Interactivo Final -->
         <div class="bloque-interactivo-final" id="bloqueFinal">
             <p class="texto-indicacion" id="textoIndicacion">haz click en el corazón</p>
             <div class="contenedor-corazon-interactivo" id="corazonInteractivo">
@@ -390,8 +386,8 @@
         </video>
     </div>
 
-    <!-- Audio de Fondo -->
-    <audio id="miCancion" preload="auto" loop>
+    <!-- Audio de Fondo (Corregido y Forzado) -->
+    <audio id="miCancion" preload="auto" loop style="display: none;">
         <source src="amor.mp3" type="audio/mpeg">
     </audio>
 
@@ -410,7 +406,7 @@
         const corazonInteractivo = document.getElementById('corazonInteractivo');
         const textoIndicacion = document.getElementById('textoIndicacion');
 
-        // Configuración de Secuencias
+        // Secuencias de texto
         const configuracionSecuencia = [
             {
                 html: "A pesar de la distancia te quiero mucho <span class='keyword-oro'>solecito</span>",
@@ -541,7 +537,6 @@
                 setTimeout(() => {
                     textoFinal.classList.add('visible');
                     
-                    // NUEVO ORDEN: El corazón y su texto salen hasta el final absoluto
                     setTimeout(() => {
                         bloqueFinal.classList.add('visible');
                     }, 1500);
@@ -555,17 +550,14 @@
                 const rosaImg = document.createElement('img');
                 rosaImg.src = 'rosas.png'; 
                 rosaImg.classList.add('rosa-cayendo');
-                
                 rosaImg.style.left = Math.random() * 100 + 'vw';
                 
                 let anchoAleatorio = Math.random() * 25 + 25; 
                 rosaImg.style.width = anchoAleatorio + 'px';
                 rosaImg.style.height = 'auto';
-                
                 rosaImg.style.animationDuration = (Math.random() * 3 + 4.5) + 's';
                 
                 document.body.appendChild(rosaImg);
-                
                 setTimeout(() => { rosaImg.remove(); }, 7500);
             }, 250); 
         }
@@ -594,22 +586,32 @@
                 const tamaño = Math.random() * 40 + 25;
                 flor.style.width = tamaño + 'px';
                 flor.style.height = 'auto';
-
                 flor.style.animationDelay = (Math.random() * 0.15) + 's';
 
                 document.body.appendChild(flor);
-
                 setTimeout(() => { flor.remove(); }, 1600);
             }
         }
 
-        // Evento inicial
+        // CONTROL ACCIONADO POR EL BOTÓN DE INICIO
         btnEmpezar.addEventListener('click', () => {
+            // 1. Forzar el audio instantáneamente usando la interacción directa del usuario
+            miCancion.volume = 1.0;
+            const playPromise = miCancion.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Reintento automático de audio debido a restricción del navegador...");
+                    // Sistema de respaldo: reintentar al mínimo cambio de estado
+                    document.body.addEventListener('touchstart', () => { miCancion.play(); }, {once: true});
+                    document.body.addEventListener('click', () => { miCancion.play(); }, {once: true});
+                });
+            }
+
+            // 2. Ejecutar animaciones y video
             btnEmpezar.classList.add('fade-out');
             videoContainer.classList.add('video-visible');
-
-            miVideo.play().catch(error => console.log("Video activo"));
-            miCancion.play().catch(error => console.log("Audio activo"));
+            miVideo.play().catch(e => console.log("Video listo"));
 
             ejecutarExplosionFlores();
 
@@ -623,17 +625,13 @@
         corazonInteractivo.addEventListener('click', () => {
             if (!bloqueFinal.classList.contains('llenado')) {
                 bloqueFinal.classList.add('llenado');
-                
-                // Desvanecer el texto de indicación sutilmente al hacer clic
                 textoIndicacion.style.opacity = '0';
                 
-                // Efecto físico de rebote e impacto
                 corazonInteractivo.style.transform = 'scale(1.4)';
                 setTimeout(() => {
                     corazonInteractivo.style.transform = 'scale(1)';
                 }, 200);
 
-                // Explosión masiva de flores
                 setTimeout(() => {
                     ejecutarExplosionFlores();
                 }, 300);
